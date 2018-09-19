@@ -5,7 +5,7 @@ import java.util.Random;
 import processing.core.PApplet;
 
 public class Brick extends PApplet{
-	
+	private final int RED = color(255, 0, 0);
 	private int xCor;
 	private int yCor;
 	private int width;
@@ -16,7 +16,7 @@ public class Brick extends PApplet{
 	private int health;
 	private boolean delete = false;
 	
-	public Brick(int xCor, int yCor) {
+	public Brick(int xCor, int yCor, int bColor) {
 		//The 10 is half of it's width. This should be a variable later
 		this.xCor = (xCor + 40);
 		//Not sure if 10 affects this...for testing
@@ -24,20 +24,18 @@ public class Brick extends PApplet{
 		//This is 1/10 of the width
 		this.width = 80;
 		this.height = 20;
-		//100 is greyish
-		Random rand = new Random();
-		this.health = rand.nextInt(3) + 1;
-		switch (this.health) {
-		case 1:
-			this.c = color(255,0,0);
-			break;
-		case 2:
-			this.c = color(0,255,0);
-			break;
-		case 3: 
-			this.c = color(0,0,255);
-			break;
+		this.c = bColor;
+		if(bColor == color(255, 0, 0)) {
+			this.health = 1;
+		}else if(bColor == color(0, 255, 0)) {
+			this.health = 2;
+		}else {
+			this.health = 3;
 		}
+	}
+
+	public void setyCor(int yCor) {
+		this.yCor = yCor;
 	}
 
 	public int getxCor() {
