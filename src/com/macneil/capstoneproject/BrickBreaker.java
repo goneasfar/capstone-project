@@ -2,13 +2,14 @@ package com.macneil.capstoneproject;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Random;
 
 import processing.core.PApplet;
+import processing.core.PImage;
 
 /*
  * TO DO LIST
  * 
- * IMPLEMENT GAME WINNING SCREEN (WILL HAVE TO DO WITH NUMBER OF BRICKS ON SCREEN)
  * 
  * 
  * MIGHT WANT TO INITIALIZE THE BUTTONS IN THE SETUP
@@ -20,16 +21,33 @@ import processing.core.PApplet;
  * 
  * PUT IN A RULES BUTTON
  * 
- * FOR DIRECTION OF BALL WHEN RELEASE AND MOVING MOUSE, WE CAN KEEP A PAST mouseX VALUE
- * AND THEN TAKE THE DIFFERENCE AND APPLY THAT WHEN THE SPACE IS PRESSED....
+ * WHEN YOU WIN, I WANT TO MAKE IT SO THAT THE BALL CAN BOUNCE AS MUCH AS IT WANTS....KEEP IT SO THAT YOU HAVE
+ * TO PRESS A BUTTON TO GO TO THE NEXT LEVEL...GET RID OF THE YOU WON SCREEN AND JUST ADD THOSE THINGS TO THAT
+ * GAMEPLAY PAGE
  * 
- * CHANGE BUTTON LAYOUT TO BE MORE GENERALIZED. IF THE SCREEN CHANGES, THE BUTTON LAYOUT WON'T BE ASS
+ * MAKE A BALL CLASS SO IN THE FUTURE YOU CAN START WITH MORE BALLS, BUT THAT ADDS IN SOME ISSUES WITH
+ * YOU ONLY LOSE A LIFE WHEN ALL BALLS ARE GONE, SO WE NEED TO KNOW HOW MANY ARE ON SCREEN AT ONCE. 
+ * 
+ * THEN NEED A POWER UP CLASS TO GO INTO BRICKS, SO BRICK CLASS NEEDS TO CHANGE BUT THOSE THINGS CAN BE 
+ * CHOSEN WITHIN THE BRICK CLASS AND DON'T NEED TO BE SEEN IN THE BRICKBREAKER CLASS. 
+ * 
+ * MADE SECRET LEVEL THAT IS ALWAYS RANDOM. I WANT TO MAKE IT SO YOU CAN'T LOSE THOUGH. MAYBE HAVE A VALUE THAT HAS TO BE CHECKED
+ * 
+ * THE PHYSICS SEEM JANKY WITH THE IMAGES AS THE BRICKS...AND WHEN THE BALL HITS THE PADDLE.
+ * 
  */
 
 public class BrickBreaker extends PApplet {
+	//Constants for the setGradiant Function
+	final int Y_AXIS = 1;
+	final int X_AXIS = 2;
+	static PImage brickImg1, brickImg2, brickImg3, backgroundImg;
+	
 	// This is set so setting up the brick array only happens once. will look into
 	// it more
 	boolean drawing = true;
+	// If we need to display the rules
+	boolean rules = false;
 	// Set up of variables for the ball
 	int ballX, ballY;
 	final int ballSize = 20;
@@ -39,10 +57,8 @@ public class BrickBreaker extends PApplet {
 	// These values may change soon
 	int ballSpeedVert = 0;
 	int ballSpeedHori = 0;
-	/*
-	 * COUNT NAME NEEDS TO CHANGE. WHAT IS IT TRACKING EXACTLY?
-	 */
-	int count = 0;
+	int shootBallCount = 0;
+	int mainMenuClickCount = 0;
 	// Values to determine what screen your on and flow of game
 	// playScreen let's the game over screen know which screen to go back to
 	// Game starts off at the intial screen 0
@@ -62,6 +78,8 @@ public class BrickBreaker extends PApplet {
 	// Store buttons for the gameWin screen
 	ArrayList<Button> gameWinButtons = new ArrayList<>();
 	Button button;
+	String [] rulesText = {"You start the game with three lives.", "Each time the ball hits the ground", "you lose a life. To win the game"
+			+ "you", "must destroy all of the bricks.", "The amount of times you must", "hit the brick is displayed on it."};
 	int buttonWidth = 255;
 	int buttonHeight = 75;
 	int lastMouseX;
@@ -71,18 +89,23 @@ public class BrickBreaker extends PApplet {
 	}
 
 	public void settings() {
-		size(800, 800);	}
+		size(800, 800);
+	}
 
 	public void setup() {
 		size(800, 800);
 		ballX = width / 2;
 		ballY = height - 60;
+		backgroundImg = loadImage("gradientBackGround.jpg");
+		brickImg1 = loadImage("brick1.jpg");
+		brickImg2 = loadImage("brick2.jpg");
+		brickImg3 = loadImage("brick3.jpg");
 	}
 
 	public void draw() {
 		switch (gameScreen) {
 		case 0:
-			count = 0;
+			shootBallCount = 0;
 			lives = 3;
 			init();
 			break;
@@ -97,13 +120,16 @@ public class BrickBreaker extends PApplet {
 			break;
 		case 4:
 			lives = 3;
-			count = 0;
+			shootBallCount = 0;
 			gameOver();
 			break;
 		case 5:
 			// Lives stay the same as last level because I am not a nice person
-			count = 0;
+			shootBallCount = 0;
 			gameWin();
+			break;
+		case 9999:
+			gamePlay();
 			break;
 		}
 
@@ -116,16 +142,19 @@ public class BrickBreaker extends PApplet {
 		textSize(30);
 		textAlign(CENTER);
 		fill(255);
-		mainMenu();
-
+		if (rules) {
+			rules();
+		} else {
+			mainMenu();
+		}
 	}
 
 	void mainMenu() {
 		String label = "";
 		float x = width / 2;
-		float y = 700;
+		float y = height / 2;
 		// Using hard values, not good practice but these should not change
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 4; i++) {
 			fill(255);
 			rect(x, y + (i * 100), buttonWidth, buttonHeight);
 			rectMode(CENTER);
@@ -139,6 +168,9 @@ public class BrickBreaker extends PApplet {
 			case 2:
 				label = "LEVEL THREE";
 				break;
+			case 3:
+				label = "RULES";
+				break;
 			}
 			fill(20);
 			// Spaced out by 100(x) + 10 due to text size
@@ -148,8 +180,22 @@ public class BrickBreaker extends PApplet {
 		}
 	}
 
+	void rules() {
+		float x = width / 2;
+		float y = height / 2;
+		fill(255);
+		rectMode(CENTER);
+		rect(x, (height / 3) * 2, x, y + 100, 90);
+		fill(0);
+		textAlign(CENTER);
+		textSize(20);
+		for(int i = 0; i < rulesText.length; i++) {
+			text(rulesText[i], x, y +(i*50));
+		}
+	}
+
 	void gamePlay() {
-		background(255);
+		background(backgroundImg);
 		switch (gameScreen) {
 		case 1:
 			drawText("Level One");
@@ -160,8 +206,11 @@ public class BrickBreaker extends PApplet {
 		case 3:
 			drawText("Level Three");
 			break;
+		case 9999:
+			drawText("SECRET LEVEL");
+			break;
 		}
-		if (count < 1) {
+		if (shootBallCount < 1) {
 			fill(0);
 			textSize(20);
 			textAlign(CENTER);
@@ -197,7 +246,7 @@ public class BrickBreaker extends PApplet {
 		textAlign(CENTER);
 		String label = "";
 		float x = width / 2;
-		float y = 700;
+		float y = height / 2;
 		textSize(40);
 		for (int i = 0; i < 3; i++) {
 			fill(255);
@@ -230,7 +279,7 @@ public class BrickBreaker extends PApplet {
 		text("YOU WON!!!", width / 2, height / 3);
 		String label = "";
 		float x = width / 2;
-		float y = (height / 3) * 2;
+		float y = (height / 2);
 		textSize(40);
 		for (int i = 0; i < 3; i++) {
 			fill(255);
@@ -277,17 +326,17 @@ public class BrickBreaker extends PApplet {
 
 	public void drawLevelOne() {
 		int bWidth = 80;
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 1; i++) {
 			// TIER ONE
-			bricks.add(new Brick((i * bWidth), 0 + (dropDown * 20), color(255, 0, 0)));
-			// TIER TWO
-			bricks.add(new Brick((i * bWidth), 70 + (dropDown * 20), color(0, 255, 0)));
-			// TIER THREE
-			bricks.add(new Brick((i * bWidth), 140 + (dropDown * 20), color(0, 0, 255)));
-			// TIER FOUR
-			bricks.add(new Brick((i * bWidth), 210 + (dropDown * 20), color(0, 255, 0)));
-			// TIER FIVE
-			bricks.add(new Brick((i * bWidth), 280 + (dropDown * 20), color(255, 0, 0)));
+			bricks.add(new Brick((i * bWidth), 0 + (dropDown * 20), 1, brickImg1, bWidth));
+			// // TIER TWO
+			// bricks.add(new Brick((i * bWidth), 70 + (dropDown * 20), 2, brickImg2, bWidth));
+			// // TIER THREE
+			// bricks.add(new Brick((i * bWidth), 140 + (dropDown * 20), 3, brickImg3, bWidth));
+			// // TIER FOUR
+			// bricks.add(new Brick((i * bWidth), 210 + (dropDown * 20), 2, brickImg2, bWidth));
+			// // TIER FIVE
+			// bricks.add(new Brick((i * bWidth), 280 + (dropDown * 20), 1, brickImg1, bWidth));
 		}
 	}
 
@@ -297,22 +346,22 @@ public class BrickBreaker extends PApplet {
 			for (int i = 0; i < 5; i++) {
 				// TIER ONE
 				bricks.add(new Brick(((i * bWidth) * 2), (j == 1) ? 0 + (dropDown * 20) : 120 + (dropDown * 20),
-						color(0, 0, 255)));
+						3, brickImg3, bWidth));
 				// TIER TWO
 				bricks.add(new Brick(((i * bWidth) * 2 + bWidth),
-						(j == 1) ? 20 + (dropDown * 20) : 140 + (dropDown * 20), color(0, 255, 0)));
+						(j == 1) ? 20 + (dropDown * 20) : 140 + (dropDown * 20), 2, brickImg2, bWidth));
 				// TIER THREE
 				bricks.add(new Brick(((i * bWidth) * 2), (j == 1) ? 40 + (dropDown * 20) : 160 + (dropDown * 20),
-						color(255, 0, 0)));
+						1, brickImg1, bWidth));
 				// TIER FOUR
 				bricks.add(new Brick(((i * bWidth) * 2 + bWidth),
-						(j == 1) ? 60 + (dropDown * 20) : 180 + (dropDown * 20), color(255, 0, 0)));
+						(j == 1) ? 60 + (dropDown * 20) : 180 + (dropDown * 20), 1, brickImg1, bWidth));
 				// TIER FIVE
 				bricks.add(new Brick(((i * bWidth) * 2), (j == 1) ? 80 + (dropDown * 20) : 200 + (dropDown * 20),
-						color(0, 255, 0)));
+						2, brickImg2, bWidth));
 				// TIER SIX
 				bricks.add(new Brick(((i * bWidth) * 2 + bWidth),
-						(j == 1) ? 100 + (dropDown * 20) : 220 + (dropDown * 20), color(0, 0, 255)));
+						(j == 1) ? 100 + (dropDown * 20) : 220 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 		}
 	}
@@ -322,40 +371,65 @@ public class BrickBreaker extends PApplet {
 		for (int i = 0; i < 10; i++) {
 			// TIER ONE
 			if (i == 1 || i == 2) {
-				bricks.add(new Brick(((i) * bWidth), 0 + (dropDown * 20), color(0, 0, 255)));
+				bricks.add(new Brick(((i) * bWidth), 0 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 			// TIER TWO
 			if (i == 0 || i == 3 || i == 5 || i == 6 || i == 8 || i == 9) {
-				bricks.add(new Brick((i * bWidth), 40 + (dropDown * 20), color(0, 0, 255)));
+				bricks.add(new Brick((i * bWidth), 40 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 			// TIER THREE
 			if (i == 0 || i == 3 || i == 5 || i == 7 || i == 9) {
-				bricks.add(new Brick((i * bWidth), 80 + (dropDown * 20), color(0, 0, 255)));
+				bricks.add(new Brick((i * bWidth), 80 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 			// TIER FOUR
 			if (i == 0 || i == 3 || i == 5 || i == 7 || i == 9) {
-				bricks.add(new Brick((i * bWidth), 120 + (dropDown * 20), color(0, 0, 255)));
+				bricks.add(new Brick((i * bWidth), 120 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 			// TIER FIVE
 			if (!(i == 4 || i == 6 || i == 7 || i == 8)) {
-				bricks.add(new Brick((i * bWidth), 160 + (dropDown * 20), color(0, 0, 255)));
+				bricks.add(new Brick((i * bWidth), 160 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 			// TIER SIX
 			if (i == 0 || i == 3 || i == 5 || i == 9) {
-				bricks.add(new Brick((i * bWidth), 200 + (dropDown * 20), color(0, 0, 255)));
+				bricks.add(new Brick((i * bWidth), 200 + (dropDown * 20), 3, brickImg3, bWidth));
 			}
 		}
 	}
 
+	public void drawAinsleighLevel() {
+		int bWidth = 40;
+		Random rand = new Random();
+		for(int i = 0; i < 20; i++) {
+			for(int j = 0; j < 20; j++) {
+				if(rand.nextInt(2) == 1) {
+					switch(rand.nextInt(3)) {
+					case 0 :
+						bricks.add(new Brick((i*bWidth), j*20+(dropDown*20), 1, brickImg1, bWidth));
+						break;
+					case 1:
+						bricks.add(new Brick((i*bWidth), j*20+(dropDown*20), 2, brickImg2, bWidth));
+						break;
+					case 2:
+						bricks.add(new Brick((i*bWidth), j*20+(dropDown*20), 3, brickImg3, bWidth));
+						break;
+					}
+				}
+			}
+		}
+	}
 	/*
 	 * Drawing the bricks from the array to the screen
 	 */
 	void drawBricks() {
 		for (Brick newBrick : bricks) {
-			fill(newBrick.getColor());
+			image(newBrick.getImage(), newBrick.getxCor()-(newBrick.getWidth()/2), newBrick.getyCor() - (newBrick.getHeight()/2), newBrick.getWidth(), newBrick.getHeight());
 			rectMode(CENTER);
 			stroke(204, 102, 0);
-			rect(newBrick.getxCor(), newBrick.getyCor(), newBrick.getWidth(), newBrick.getHeight());
+			//rect(newBrick.getxCor(), newBrick.getyCor(), newBrick.getWidth(), newBrick.getHeight());
+			fill(255);
+			textAlign(CENTER);
+			textSize(20);
+			text(newBrick.getHealth(), newBrick.getxCor(), newBrick.getyCor() + 7);
 		}
 	}
 
@@ -393,7 +467,7 @@ public class BrickBreaker extends PApplet {
 			if (lives == 0) {
 				gameScreen = 4;
 			}
-			count = 0;
+			shootBallCount = 0;
 			ballSpeedHori = 0;
 			ballSpeedVert = 0;
 		}
@@ -406,10 +480,13 @@ public class BrickBreaker extends PApplet {
 		if (ballX + (ballSize / 2) > (mouseX - racketWidth) && (ballX - (ballSize / 2) < (mouseX + racketWidth))) {
 			if (ballY + (ballSize / 2) > (height - 20)) {
 				bounceUp(height - 20);
-				//Where the ball is compared to the racket gives it more speed but also how much the racket
-				//is being moved before it hits it as well. Not sure how this is affected by coming it at
-				//the ball from the right and hitting it on the right side (positive and negative)
-				ballSpeedHori = (ballX - mouseX) / 5 + ((mouseX - lastMouseX)/4);
+				// Where the ball is compared to the racket gives it more speed but also how
+				// much the racket
+				// is being moved before it hits it as well. Not sure how this is affected by
+				// coming it at
+				// the ball from the right and hitting it on the right side (positive and
+				// negative)
+				ballSpeedHori = (ballX - mouseX) / 5 + ((mouseX - lastMouseX) / 4);
 				hitPaddle++;
 			}
 		}
@@ -512,14 +589,34 @@ public class BrickBreaker extends PApplet {
 	}
 
 	/*
-	 * USER INTERACTION 
+	 * USER INTERACTION
 	 * 
-	 * MOUSE PRESSED IS LONG AND PROBABLY TOO CHUNKY. IT IS DEALING WITH WHAT HAPPENS WITH DIFFERENT
-	 * BUTTONS IN THE SCREENS THAT THEY EXIST.
+	 * MOUSE PRESSED IS LONG AND PROBABLY TOO CHUNKY. IT IS DEALING WITH WHAT
+	 * HAPPENS WITH DIFFERENT BUTTONS IN THE SCREENS THAT THEY EXIST.
 	 */
 	public void mousePressed() {
 		// If we are on the main menu
 		if (gameScreen == 0) {
+			//So that we can't click the level buttons while displaying the rules
+			if(mouseX <= width && mouseX >= width-50 && mouseY >= 0 && mouseY <= 50) {
+				//Secret level, no deaths, ball speed up, bricks spawn randomly?
+				if (drawing) {
+					bricks.clear();
+					drawAinsleighLevel();
+					playScreen = 9999;
+					gameScreen = 9999;
+					dropDown = 0;
+					hitPaddle = 0;
+					drawing = false;
+				}
+			}
+			if(mainMenuClickCount == 2) {
+				mainMenuClickCount = 0;
+			}
+			if(mainMenuClickCount == 1 && rules) {
+				rules = false;
+				mainMenuClickCount = 2;
+			}
 			drawing = true;
 			// If we click level one...need coordinated of this
 			for (Button button : mainMenuButtons) {
@@ -531,36 +628,49 @@ public class BrickBreaker extends PApplet {
 						// Unsure of the button, so we can do a switch case to find it by label
 						switch (button.getLabel()) {
 						case "LEVEL ONE":
-							if (drawing) {
-								bricks.clear();
-								drawLevelOne();
-								playScreen = 1;
-								gameScreen = 1;
-								dropDown = 0;
-								hitPaddle = 0;
-								drawing = false;
+							if (mainMenuClickCount == 0 && !rules) {
+								if (drawing) {
+									bricks.clear();
+									drawLevelOne();
+									playScreen = 1;
+									gameScreen = 1;
+									dropDown = 0;
+									hitPaddle = 0;
+									drawing = false;
+								}
 							}
 							break;
 						case "LEVEL TWO":
-							if (drawing) {
-								bricks.clear();
-								drawLevelTwo();
-								playScreen = 2;
-								gameScreen = 2;
-								dropDown = 0;
-								hitPaddle = 0;
-								drawing = false;
+							if (mainMenuClickCount == 0 && !rules) {
+								if (drawing) {
+									bricks.clear();
+									drawLevelTwo();
+									playScreen = 2;
+									gameScreen = 2;
+									dropDown = 0;
+									hitPaddle = 0;
+									drawing = false;
+								}
 							}
 							break;
 						case "LEVEL THREE":
-							if (drawing) {
-								bricks.clear();
-								drawLevelThree();
-								playScreen = 3;
-								gameScreen = 3;
-								dropDown = 0;
-								hitPaddle = 0;
-								drawing = false;
+							if (mainMenuClickCount == 0 && !rules) {
+								if (drawing) {
+									bricks.clear();
+									drawLevelThree();
+									playScreen = 3;
+									gameScreen = 3;
+									dropDown = 0;
+									hitPaddle = 0;
+									drawing = false;
+								}
+							}
+							break;
+						case "RULES":
+							if (!rules) {
+								// displays the rules
+								rules = true;
+								mainMenuClickCount = 1;
 							}
 							break;
 						}
@@ -674,15 +784,12 @@ public class BrickBreaker extends PApplet {
 	}
 
 	public void keyPressed() {
-		if (gameScreen == 1 || gameScreen == 2 || gameScreen == 3) {
+		if (gameScreen == 1 || gameScreen == 2 || gameScreen == 3 || gameScreen == 9999) {
 			if (key == ' ') {
-				if (count == 0) {
+				if (shootBallCount == 0) {
 					ballSpeedVert = -8;
-					ballSpeedHori = (mouseX - lastMouseX)/4;
-					count++;
-					System.out.println("mouseX: " + mouseX);
-					System.out.println("lastMouseX: " + lastMouseX);
-					System.out.println((mouseX - lastMouseX)/4);
+					ballSpeedHori = (mouseX - lastMouseX) / 4;
+					shootBallCount++;
 				}
 			}
 		}
@@ -728,4 +835,30 @@ public class BrickBreaker extends PApplet {
 		}
 
 	}
+	
+	/*
+	 * This is code taken from https://processing.org/examples/lineargradient.html
+	 * This is code used to make a good looking gradiant for objects.
+	 */
+	void setGradient(int x, int y, float w, float h, int c1, int c2, int axis ) {
+
+		  noFill();
+
+		  if (axis == Y_AXIS) {  // Top to bottom gradient
+		    for (int i = y; i <= y+h; i++) {
+		      float inter = map(i, y, y+h, 0, 1);
+		      int c = lerpColor(c1, c2, inter);
+		      stroke(c);
+		      line(x, i, x+w, i);
+		    }
+		  }  
+		  else if (axis == X_AXIS) {  // Left to right gradient
+		    for (int i = x; i <= x+w; i++) {
+		      float inter = map(i, x, x+w, 0, 1);
+		      int c = lerpColor(c1, c2, inter);
+		      stroke(c);
+		      line(i, y, i, y+h);
+		    }
+		  }
+		}
 }

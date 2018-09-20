@@ -3,6 +3,7 @@ package com.macneil.capstoneproject;
 import java.util.Random;
 
 import processing.core.PApplet;
+import processing.core.PImage;
 
 public class Brick extends PApplet{
 	private final int RED = color(255, 0, 0);
@@ -11,27 +12,23 @@ public class Brick extends PApplet{
 	private int width;
 	private int height;
 	//Depends on the health.
-	private int c;
+	private PImage img;
 	//How many times it can be hit. 
 	private int health;
 	private boolean delete = false;
 	
-	public Brick(int xCor, int yCor, int bColor) {
+
+	public Brick(int xCor, int yCor, int health, PImage img, int width) {
+		
 		//The 10 is half of it's width. This should be a variable later
-		this.xCor = (xCor + 40);
+		this.xCor = (xCor + (width/2));
 		//Not sure if 10 affects this...for testing
 		this.yCor = (yCor + 10);
 		//This is 1/10 of the width
-		this.width = 80;
+		this.width = width;
 		this.height = 20;
-		this.c = bColor;
-		if(bColor == color(255, 0, 0)) {
-			this.health = 1;
-		}else if(bColor == color(0, 255, 0)) {
-			this.health = 2;
-		}else {
-			this.health = 3;
-		}
+		this.health = health;
+		this.img = img;
 	}
 
 	public void setyCor(int yCor) {
@@ -57,14 +54,12 @@ public class Brick extends PApplet{
 		return height;
 	}
 
-	public int getColor() {
-		return c;
-	}
-
 	public int getHealth() {
 		return health;
 	}
-	
+	public PImage getImage() {
+		return img;
+	}
 	public void hit() {
 		loseHealth();
 	}
@@ -79,10 +74,10 @@ public class Brick extends PApplet{
 	private void changeColor() {
 		switch (this.health) {
 		case 1:
-			this.c = color(255,0,0);
+			this.img = BrickBreaker.brickImg1;
 			break;
 		case 2:
-			this.c = color(0, 255 ,0);
+			this.img = BrickBreaker.brickImg2;
 			break;
 		}
 	}
