@@ -65,7 +65,11 @@ public class Brick extends PApplet{
 	}
 	private void loseHealth() {
 		this.health--;
-		if(health < 1) {
+		//Change this from health < 1 to health == 0
+		//I want it so that some bricks health can be set to -1 and
+		//they can't be destroyed. This should function as normal with
+		//The original bricks implemented
+		if(health == 0) {
 			this.delete = true;
 		}else {
 			changeColor();
